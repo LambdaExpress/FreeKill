@@ -72,11 +72,12 @@ ColumnLayout {
     cardDump = lines.join("\n");
   }
 
-  function fillFirstSelfHandcard() {
+  function fillSelfHandcards(allCards) {
     const ids = getHandcardIds(Self.id);
-    if (ids.length > 0) {
-      cardIdsField.text = ids[0].toString();
-    }
+    if (ids.length === 0) return [];
+    const selected = allCards ? ids : [ids[0]];
+    cardIdsField.text = selected.join(",");
+    return selected;
   }
 
   function fillFirstOtherHandcard() {
@@ -110,9 +111,12 @@ ColumnLayout {
   }
 
   function forgeZhiheng() {
-    const cards = parseIds(cardIdsField.text);
+    let cards = parseIds(cardIdsField.text);
     if (cards.length === 0) {
-      statusMessage = "制衡至少需要填写一张子卡 id。";
+      cards = fillSelfHandcards(true);
+    }
+    if (cards.length === 0) {
+      statusMessage = "制衡默认使用自己的全部手牌，但当前没有可用的已追踪手牌 id。";
       return;
     }
     sendForgedReply("zhiheng", cards, []);
@@ -122,13 +126,18 @@ ColumnLayout {
     sendForgedReply("kurou", [], []);
   }
 
-  function forgeJijiu() {
+  function forgeQingnang() {
     const cards = parseIds(cardIdsField.text);
     if (cards.length !== 1) {
-      statusMessage = "急救测试需要且只需要一张子卡 id。";
+      statusMessage = "青囊测试需要且只需要一张子卡 id。";
       return;
     }
-    sendForgedReply("jijiu", cards, parseIds(targetIdsField.text));
+    const targets = parseIds(targetIdsField.text);
+    if (targets.length !== 1) {
+      statusMessage = "青囊测试需要且只需要一个目标 id。";
+      return;
+    }
+    sendForgedReply("qingnang", cards, targets);
   }
 
   Text {
@@ -204,8 +213,8 @@ ColumnLayout {
       selectByMouse: true
     }
     Button {
-      text: "填自己首张"
-      onClicked: fillFirstSelfHandcard();
+      text: "填自己全部"
+      onClicked: fillSelfHandcards(true);
     }
     Button {
       text: "填他人首张"
@@ -221,7 +230,7 @@ ColumnLayout {
       id: targetIdsField
       Layout.fillWidth: true
       Layout.columnSpan: 3
-      placeholderText: "急救等需要目标时填写，例如：2"
+      placeholderText: "青囊需要目标时填写，例如：2"
       selectByMouse: true
     }
   }
@@ -240,9 +249,9 @@ ColumnLayout {
       onClicked: forgeKurou();
     }
     Button {
-      text: "伪造急救"
+      text: "伪造青囊"
       enabled: canSendForgedReply
-      onClicked: forgeJijiu();
+      onClicked: forgeQingnang();
     }
   }
 

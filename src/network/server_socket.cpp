@@ -5,13 +5,16 @@
 #include "server/server.h"
 #include "core/util.h"
 #include <QNetworkDatagram>
+#include <QNetworkProxy>
 
 ServerSocket::ServerSocket(QObject *parent) : QObject(parent) {
   server = new QTcpServer(this);
+  server->setProxy(QNetworkProxy::NoProxy);
   connect(server, &QTcpServer::newConnection, this,
           &ServerSocket::processNewConnection);
 
   udpSocket = new QUdpSocket(this);
+  udpSocket->setProxy(QNetworkProxy::NoProxy);
   connect(udpSocket, &QUdpSocket::readyRead,
           this, &ServerSocket::readPendingDatagrams);
 }
