@@ -159,6 +159,8 @@ jobs:
     name: Release APK
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - name: Checkout Git Repo
       uses: actions/checkout@v3
@@ -198,7 +200,7 @@ jobs:
     - name: Upload Release APK
       uses: softprops/action-gh-release@v1
       with:
-        token: ${{ secrets.MY_TOKEN }}
+        token: ${{ github.token }}
         tag_name: ${{ steps.previoustag.outputs.tag }}
         files: apk/FreeKill-${{ steps.previoustag.outputs.tag }}.apK
 
