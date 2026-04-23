@@ -17,8 +17,21 @@ ServerSocket::ServerSocket(QObject *parent) : QObject(parent) {
 }
 
 bool ServerSocket::listen(const QHostAddress &address, ushort port) {
-  udpSocket->bind(port);
-  return server->listen(address, port);
+  if (udpSocket->state() != QAbstractSocket::BoundState &&
+      !udpSocket->bind(port)) {
+    qWarning() << "UDP bind failed on port" << port
+               << "error=" << udpSocket->error()
+               << "message=" << udpSocket->errorString();
+  }
+
+  const bool ok = server->listen(address, port);
+  if (!ok) {
+    qWarning() << "TCP listen failed on" << address.toString() << port
+               << "error=" << server->serverError()
+               << "message=" << server->errorString();
+  }
+
+  return ok;
 }
 
 void ServerSocket::processNewConnection() {

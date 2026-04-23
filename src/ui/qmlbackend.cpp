@@ -116,15 +116,27 @@ void QmlBackend::setEngine(QQmlApplicationEngine *engine) {
   this->engine = engine;
 }
 
-void QmlBackend::startServer(ushort port) {
-  if (!ServerInstance) {
-    Server *server = new Server(nullptr);
+bool QmlBackend::startServer(ushort port) {
+  if (ServerInstance)
+    return ServerInstance->isListening;
 
-    if (!server->listen(QHostAddress::Any, port)) {
-      server->deleteLater();
-      emit notifyUI("ErrorMsg", tr("Cannot start server!"));
-    }
+  Server *server = new Server(nullptr);
+  bool listening = server->listen(QHostAddress::Any, port);
+
+#ifdef Q_OS_ANDROID
+  if (!listening) {
+    qWarning() << "Server listen on Any failed, retrying on AnyIPv4";
+    listening = server->listen(QHostAddress::AnyIPv4, port);
   }
+#endif
+
+  if (!listening) {
+    server->deleteLater();
+    emit notifyUI("ErrorMsg", tr("Cannot start server!"));
+    return false;
+  }
+
+  return true;
 }
 
 static ClientPlayer dummyPlayer(0, nullptr);

@@ -27,7 +27,7 @@ public:
   QQmlApplicationEngine *getEngine() const;
   void setEngine(QQmlApplicationEngine *engine);
 
-  Q_INVOKABLE void startServer(ushort port);
+  Q_INVOKABLE bool startServer(ushort port);
   Q_INVOKABLE void joinServer(QString address, ushort port = 9527);
 
   // Lobby

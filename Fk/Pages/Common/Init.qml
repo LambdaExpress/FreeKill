@@ -70,7 +70,10 @@ W.PageBase {
             App.setBusy(true);
             Config.addFavorite(Config.serverAddr, Config.serverPort, "",
               Config.screenName, Config.password);
-            Backend.startServer(9527);
+            if (!Backend.startServer(9527)) {
+              App.setBusy(false);
+              return;
+            }
 
             Backend.joinServer("127.0.0.1", 9527);
             ClientInstance.setLoginInfo(Config.screenName, Config.password);
