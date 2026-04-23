@@ -3,6 +3,8 @@ name: Build For Android
 on:
   workflow_dispatch:
   push:
+    branches:
+      - master
     tags:
       - '*'
 
@@ -167,11 +169,33 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Get Previous tag
-      id: previoustag
-      uses: WyriHaximus/github-action-get-previous-tag@v1
-      with:
-        fallback: 0.0.1
+    - name: Create release tag
+      id: releasetag
+      shell: bash
+      run: |
+        if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+          tag="${GITHUB_REF_NAME}"
+        else
+          version="$(sed -n 's/^project(FreeKill VERSION \([^)]*\)).*/\1/p' CMakeLists.txt | head -n 1)"
+          if [[ -z "${version}" ]]; then
+            version="0.0.0"
+          fi
+
+          base_tag="release-${version}-${GITHUB_RUN_NUMBER}"
+          tag="${base_tag}"
+          suffix=1
+          while git rev-parse "refs/tags/${tag}" >/dev/null 2>&1; do
+            tag="${base_tag}-${GITHUB_RUN_ATTEMPT}-${suffix}"
+            suffix=$((suffix + 1))
+          done
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${tag}" -m "Release ${tag}" "${GITHUB_SHA}"
+          git push origin "refs/tags/${tag}"
+        fi
+
+        echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
     - name: Download APK from build
       uses: actions/download-artifact@v4
@@ -195,12 +219,13 @@ jobs:
     - name: Rename APK
       run: |
         mv ${{ steps.sign_app.outputs.signedReleaseFile }} \
-          apk/FreeKill-${{ steps.previoustag.outputs.tag }}.apK
+          apk/FreeKill-${{ steps.releasetag.outputs.tag }}.apK
 
     - name: Upload Release APK
       uses: softprops/action-gh-release@v1
       with:
         token: ${{ github.token }}
-        tag_name: ${{ steps.previoustag.outputs.tag }}
-        files: apk/FreeKill-${{ steps.previoustag.outputs.tag }}.apK
+        tag_name: ${{ steps.releasetag.outputs.tag }}
+        name: ${{ steps.releasetag.outputs.tag }}
+        files: apk/FreeKill-${{ steps.releasetag.outputs.tag }}.apK
 
