@@ -745,6 +745,8 @@ W.PageBase {
         general: item.general,
         deputyGeneral: item.deputyGeneral,
         seatNumber: item.seatNumber,
+        hp: item.hp,
+        maxHp: item.maxHp,
       });
     }
     return ret;

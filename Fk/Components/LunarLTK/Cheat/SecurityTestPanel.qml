@@ -33,8 +33,25 @@ ColumnLayout {
   }
 
   function getHandcardIds(playerId) {
+    if (playerId === Self.id && roomScene.dashboard?.handcardArea?.cards) {
+      return roomScene.dashboard.handcardArea.cards
+        .map(card => card.cid)
+        .filter(cid => typeof cid === "number");
+    }
+
     const ids = Ltk.getPlayerHandcards(playerId);
     return Array.isArray(ids) ? ids : [];
+  }
+
+  function getDefaultQingnangTarget() {
+    const players = roomScene.getPlayerSnapshot();
+    const selfPlayer = players.find(player => player.id === Self.id);
+    if (selfPlayer && selfPlayer.hp < selfPlayer.maxHp) {
+      return selfPlayer.id;
+    }
+
+    const wounded = players.find(player => player.hp < player.maxHp);
+    return wounded ? wounded.id : -1;
   }
 
   function formatPlayerName(player) {
@@ -127,14 +144,33 @@ ColumnLayout {
   }
 
   function forgeQingnang() {
-    const cards = parseIds(cardIdsField.text);
-    if (cards.length !== 1) {
-      statusMessage = "青囊测试需要且只需要一张子卡 id。";
+    let cards = parseIds(cardIdsField.text);
+    if (cards.length === 0) {
+      cards = fillSelfHandcards(false);
+    } else if (cards.length > 1) {
+      cards = [cards[0]];
+      cardIdsField.text = cards[0].toString();
+    }
+
+    if (cards.length === 0) {
+      statusMessage = "青囊默认使用自己的第一张手牌，但当前没有可用的已追踪手牌 id。";
       return;
     }
-    const targets = parseIds(targetIdsField.text);
-    if (targets.length !== 1) {
-      statusMessage = "青囊测试需要且只需要一个目标 id。";
+
+    let targets = parseIds(targetIdsField.text);
+    if (targets.length === 0) {
+      const target = getDefaultQingnangTarget();
+      if (target > 0) {
+        targets = [target];
+        targetIdsField.text = target.toString();
+      }
+    } else if (targets.length > 1) {
+      targets = [targets[0]];
+      targetIdsField.text = targets[0].toString();
+    }
+
+    if (targets.length === 0) {
+      statusMessage = "青囊默认选择第一个受伤角色，但当前没有可用的受伤目标。";
       return;
     }
     sendForgedReply("qingnang", cards, targets);
@@ -195,6 +231,14 @@ ColumnLayout {
       enabled: canUseTool
       onClicked: refreshCardDump();
     }
+  }
+
+  Text {
+    Layout.fillWidth: true
+    text: statusMessage
+    color: "#F0E5DA"
+    font.pixelSize: 14
+    wrapMode: Text.WordWrap
   }
 
   GridLayout {
@@ -261,14 +305,6 @@ ColumnLayout {
       ? "当前可以发送：服务端正在等待你的回包。"
       : "当前不可发送：请确认免责声明，并等待出牌阶段或响应阶段的请求。"
     color: canSendForgedReply ? "#9BE07B" : "#E4D5A0"
-    font.pixelSize: 14
-    wrapMode: Text.WordWrap
-  }
-
-  Text {
-    Layout.fillWidth: true
-    text: statusMessage
-    color: "#F0E5DA"
     font.pixelSize: 14
     wrapMode: Text.WordWrap
   }
