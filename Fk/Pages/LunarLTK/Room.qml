@@ -41,6 +41,7 @@ W.PageBase {
   property string responding_card
   property var extra_data: ({})
   property var skippedUseEventId: []
+  property bool securityTestToolEnabled: true
 
   MediaPlayer {
     id: bgm
@@ -348,6 +349,13 @@ W.PageBase {
         text: Lua.tr("Chat")
         textFont.pixelSize: 28
         onClicked: Mediator.notify(this, Command.IWantToChat);
+      }
+      MetroButton {
+        text: "Security Test"
+        textFont.pixelSize: 28
+        visible: securityTestToolEnabled
+        enabled: securityTestToolEnabled
+        onClicked: roomScene.startCheat("SecurityTestPanel");
       }
     }
   }
@@ -725,6 +733,21 @@ W.PageBase {
   function getPhotoOrDashboard(id) {
     if (id === Self.id) return dashboard;
     return getPhoto(id);
+  }
+
+  function getPlayerSnapshot() {
+    const ret = [];
+    for (let i = 0; i < photoModel.count; i++) {
+      const item = photoModel.get(i);
+      ret.push({
+        id: item.id,
+        screenName: item.screenName,
+        general: item.general,
+        deputyGeneral: item.deputyGeneral,
+        seatNumber: item.seatNumber,
+      });
+    }
+    return ret;
   }
 
   function activate() {
